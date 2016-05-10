@@ -44,7 +44,10 @@ class LattesBusca(unittest.TestCase):
         driver = self.driver
         file_name = authors_file_name
         csv_reader = unicode_csv_reader(open(file_name))
-
+        ids_downloaded = os.listdir(os.getcwd()+'/data')
+        for id_downloaded in ids_downloaded:
+            ids_downloaded = ids_downloaded[:-4]
+        print(ids_downloaded)
         for row in csv_reader:
             author_name = row[0]
             paper_title = row[1].encode('utf-8')
@@ -73,10 +76,12 @@ class LattesBusca(unittest.TestCase):
                             paper_found = True
                             id_autor_xml = informacoes_autor.find_element_by_tag_name('li')
                             id_autor_xml = id_autor_xml.text[-16:]
-                            print(self.base_url+'/download.do?idcnpq='+id_autor_xml)
-                            driver.get(self.base_url+'/download.do?idcnpq='+id_autor_xml)
-                            # QUEBRAR CAPTCHA #
-                            WebDriverWait(driver, 31622400).until(EC.invisibility_of_element_located((By.ID, 'btn_validar_captcha')))
+                            if not id_autor_xml in ids_downloaded:
+                                print(self.base_url+'/download.do?idcnpq='+id_autor_xml)
+                                driver.get(self.base_url+'/download.do?idcnpq='+id_autor_xml)
+                                # QUEBRAR CAPTCHA #
+                                WebDriverWait(driver, 31622400).until(EC.invisibility_of_element_located((By.ID, 'btn_validar_captcha')))
+                            ids_downloaded.append(id_autor_xml)
                             with open(downloaded_file_name, 'a') as downloaded_file:
                                 downloaded_file.write('"'+author_name.encode('utf-8')+'","'+paper_title+'"\n')
                             break
