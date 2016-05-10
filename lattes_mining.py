@@ -1,6 +1,11 @@
 #!/usr/bin/python
 # coding=utf-8
- 
+
+authors_file_name = ''
+downloaded_file_name = ''
+error_file_name = ''
+not_found_file_name = ''
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -37,7 +42,7 @@ class LattesBusca(unittest.TestCase):
     def test_lattes_busca(self):
         erros, acertos = 0, 0
         driver = self.driver
-        file_name = 'authors.csv'
+        file_name = authors_file_name
         csv_reader = unicode_csv_reader(open(file_name))
 
         for row in csv_reader:
@@ -72,14 +77,14 @@ class LattesBusca(unittest.TestCase):
                             driver.get(self.base_url+'/download.do?idcnpq='+id_autor_xml)
                             # QUEBRAR CAPTCHA #
                             WebDriverWait(driver, 31622400).until(EC.invisibility_of_element_located((By.ID, 'btn_validar_captcha')))
-                            with open('downloaded.csv', 'a') as downloaded_file:
+                            with open(downloaded_file_name, 'a') as downloaded_file:
                                 downloaded_file.write('"'+author_name.encode('utf-8')+'","'+paper_title+'"\n')
                             break
                 if not paper_found:
-                    with open('error.csv', 'a') as errors_file:
-                        errors_file.write('"'+author_name.encode('utf-8')+'","'+paper_title+'"\n')
+                    with open(error_file_name, 'a') as error_file:
+                        error_file.write('"'+author_name.encode('utf-8')+'","'+paper_title+'"\n')
             else:
-                with open('not_found.csv', 'a') as not_found_file:
+                with open(not_found_file_name, 'a') as not_found_file:
                         not_found_file.write('"'+author_name.encode('utf-8')+'","'+paper_title+'"\n')
             remove_first_line_from_file(file_name)
 
