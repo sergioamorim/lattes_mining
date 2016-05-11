@@ -1,10 +1,10 @@
 #!/usr/bin/python
 # coding=utf-8
 
-authors_file_name = ''
-downloaded_file_name = ''
-error_file_name = ''
-not_found_file_name = ''
+authors_file_name = 'wie_authors.csv'
+downloaded_file_name = 'wie_downloaded.csv'
+error_file_name = 'wie_error.csv'
+not_found_file_name = 'wie_not_found.csv'
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
