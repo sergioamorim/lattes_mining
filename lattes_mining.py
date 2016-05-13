@@ -1,10 +1,7 @@
 #!/usr/bin/python
 # coding=utf-8
 
-authors_file_name = 'wie_authors.csv'
-downloaded_file_name = 'wie_downloaded.csv'
-error_file_name = 'wie_error.csv'
-not_found_file_name = 'wie_not_found.csv'
+prefix_file_name = 'wie'
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -38,6 +35,11 @@ class LattesBusca(unittest.TestCase):
         self.base_url = 'http://buscatextual.cnpq.br/buscatextual'
         self.verificationErrors = []
         self.accept_next_alert = True
+        authors_file_name = prefix_file_name+'_authors.csv'
+        downloaded_file_name = prefix_file_name+'_downloaded.csv'
+        error_file_name = prefix_file_name+'_error.csv'
+        not_found_file_name = prefix_file_name+'_not_found.csv'
+
 
     def test_lattes_busca(self):
         erros, acertos = 0, 0
