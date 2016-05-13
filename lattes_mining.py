@@ -24,6 +24,8 @@ def remove_first_line_from_file(authors_file_name):
 
 if __name__ == '__main__':
     profile = webdriver.FirefoxProfile()
+    profile.set_preference('permissions.default.stylesheet', 2)
+    profile.set_preference('dom.ipc.plugins.enabled.libflashplayer.so', 'false')
     profile.set_preference('browser.download.dir', os.getcwd()+'/data')
     profile.set_preference('browser.download.folderList', 2)
     profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 'application/zip')
