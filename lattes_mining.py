@@ -21,18 +21,14 @@ def remove_first_line_from_file(authors_file_name):
     with codecs.open(authors_file_name, 'w', encoding='utf-8') as fout:
         fout.writelines(data[1:])
 
+def assure_path_exists(path):
+        dir = os.path.dirname(path)
+        if not os.path.exists(dir):
+                os.makedirs(dir)
+
 
 if __name__ == '__main__':
-    profile = webdriver.FirefoxProfile()
-    profile.set_preference('permissions.default.stylesheet', 2)
-    profile.set_preference('dom.ipc.plugins.enabled.libflashplayer.so', 'false')
-    profile.set_preference('browser.download.dir', os.getcwd()+'/data')
-    profile.set_preference('browser.download.folderList', 2)
-    profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 'application/zip')
-    driver = webdriver.Firefox(firefox_profile=profile)
-    driver.implicitly_wait(30)
-    base_url = 'http://buscatextual.cnpq.br/buscatextual'
-
+    
     if (len(sys.argv)>1):
         prefix_file_name = sys.argv[1]
         authors_file_name = prefix_file_name+'_authors.csv'
@@ -46,13 +42,29 @@ if __name__ == '__main__':
         not_found_file_name = 'not_found.csv'
 
     try:
-        csv_reader = unicode_csv_reader(open(authors_file_name))
+        assure_path_exists(os.getcwd()+'/data')
     except:
-        sys.exit('Erro ao abrir o arquivo '+authors_file_name)
+        sys.exit('Erro ao criar o diretório '+os.getcwd()+'/data')
 
     ids_downloaded = os.listdir(os.getcwd()+'/data')
 
-    for row in csv_reader:
+    profile = webdriver.FirefoxProfile()
+    profile.set_preference('permissions.default.stylesheet', 2)
+    profile.set_preference('dom.ipc.plugins.enabled.libflashplayer.so', 'false')
+    profile.set_preference('browser.download.dir', os.getcwd()+'/data')
+    profile.set_preference('browser.download.folderList', 2)
+    profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 'application/zip')
+    driver = webdriver.Firefox(firefox_profile=profile)
+    driver.implicitly_wait(30)
+    base_url = 'http://buscatextual.cnpq.br/buscatextual'
+    
+    while os.stat(authors_file_name).st_size != 0:
+        try:
+            csv_reader = unicode_csv_reader(open(authors_file_name))
+        except:
+            sys.exit('Erro ao abrir o arquivo '+authors_file_name)
+        
+        row = next(csv_reader)
         author_name = row[0]
         paper_title = row[1].encode('utf-8')
 
@@ -95,16 +107,34 @@ if __name__ == '__main__':
                         ids_downloaded.append(id_autor_xml+'.zip')
 
                         with open(downloaded_file_name, 'a') as downloaded_file:
-                            downloaded_file.write('"'+author_name.encode('utf-8')+'","'+paper_title+'"\n')
+                            try:
+                                downloaded_file.write('"'+author_name.encode('utf-8')+'","'+paper_title+'"\n')
+                            except:
+                                driver.quit()
+                                sys.exit('Erro ao escrever no arquivo '+downloaded_file_name)
                         break
 
             if not paper_found:
                 with open(error_file_name, 'a') as error_file:
-                    error_file.write('"'+author_name.encode('utf-8')+'","'+paper_title+'"\n')
+                    try:
+                        error_file.write('"'+author_name.encode('utf-8')+'","'+paper_title+'"\n')
+                    except:
+                        driver.quit()
+                        sys.exit('Erro ao escrever no arquivo '+error_file_name)
+
         else:
             with open(not_found_file_name, 'a') as not_found_file:
+                try:
                     not_found_file.write('"'+author_name.encode('utf-8')+'","'+paper_title+'"\n')
+                except:
+                    driver.quit()
+                    sys.exit('Erro ao escrever no arquivo '+not_found_file_name)
 
-        remove_first_line_from_file(authors_file_name)
+        try:
+            remove_first_line_from_file(authors_file_name)
+        except:
+            driver.quit()
+            sys.exit('Erro ao tentar remover a primeira linha do arquivo '+authors_file_name)
 
     driver.quit()
+    print ('\n\nOK!\n')
