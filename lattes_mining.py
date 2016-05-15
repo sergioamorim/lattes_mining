@@ -48,6 +48,7 @@ if __name__ == '__main__':
     try:
         csv_reader = unicode_csv_reader(open(authors_file_name))
     except:
+    	driver.quit()
         sys.exit('Erro ao abrir o arquivo '+authors_file_name)
 
     ids_downloaded = os.listdir(os.getcwd()+'/data')
