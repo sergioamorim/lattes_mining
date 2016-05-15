@@ -42,11 +42,6 @@ if __name__ == '__main__':
         not_found_file_name = 'not_found.csv'
 
     try:
-        csv_reader = unicode_csv_reader(open(authors_file_name))
-    except:
-        sys.exit('Erro ao abrir o arquivo '+authors_file_name)
-    
-    try:
         assure_path_exists(os.getcwd()+'/data')
     except:
         sys.exit('Erro ao criar o diretório '+os.getcwd()+'/data')
@@ -62,11 +57,14 @@ if __name__ == '__main__':
     driver = webdriver.Firefox(firefox_profile=profile)
     driver.implicitly_wait(30)
     base_url = 'http://buscatextual.cnpq.br/buscatextual'
-
-
-
-
-    for row in csv_reader:
+    
+    while os.stat(authors_file_name).st_size != 0:
+        try:
+            csv_reader = unicode_csv_reader(open(authors_file_name))
+        except:
+            sys.exit('Erro ao abrir o arquivo '+authors_file_name)
+        
+        row = next(csv_reader)
         author_name = row[0]
         paper_title = row[1].encode('utf-8')
 
@@ -137,6 +135,6 @@ if __name__ == '__main__':
         except:
             driver.quit()
             sys.exit('Erro ao tentar remover a primeira linha do arquivo '+authors_file_name)
-            
+
     driver.quit()
     print ('\n\nOK!\n')
