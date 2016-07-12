@@ -26,6 +26,27 @@ def assure_path_exists(path):
         if not os.path.exists(dir):
                 os.makedirs(dir)
 
+def convertCaptchatoBase64(drive):
+    imgBase64 = drive.execute_script("""
+    var img = window.document.getElementById('image_captcha');
+    // Create an empty canvas element
+    var canvas = window.document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    // Copy the image contents to the canvas
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+
+
+
+    var dataURL = canvas.toDataURL("image/png");
+
+    return dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
+    """)
+    return imgBase64
+
+
 
 if __name__ == '__main__':
     
@@ -90,6 +111,14 @@ if __name__ == '__main__':
                     driver.get(base_url+'/visualizacv.do?id='+id)
 
                     # QUEBRAR CAPTCHA #
+                    imgBase64 = convertCaptchatoBase64(drive)
+                    params = urllib.urlencode({'imgBase64': imgBase64})
+                    headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
+                    conn = httplib.HTTPConnection("")
+                    conn.request("POST", "", params, headers)
+                    response = conn.getresponse()
+                    print response.status, response.reason
+
                     driver.implicitly_wait(31622400)
                     informacoes_autor = driver.find_element_by_class_name('informacoes-autor')
                     page_source = driver.page_source.encode('utf-8')
