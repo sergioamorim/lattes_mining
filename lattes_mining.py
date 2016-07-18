@@ -9,6 +9,10 @@ import os
 import csv
 import codecs
 import sys
+import urllib
+import httplib
+import requests
+import json
 
 def unicode_csv_reader(utf8_data, dialect=csv.excel, **kwargs):
         csv_reader = csv.reader(utf8_data, dialect=dialect, **kwargs)
@@ -76,7 +80,7 @@ if __name__ == '__main__':
     profile.set_preference('browser.download.folderList', 2)
     profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 'application/zip')
     driver = webdriver.Firefox(firefox_profile=profile)
-    driver.implicitly_wait(30)
+    driver.implicitly_wait(3)
     base_url = 'http://buscatextual.cnpq.br/buscatextual'
     
     while os.stat(authors_file_name).st_size != 0:
@@ -111,17 +115,29 @@ if __name__ == '__main__':
                     driver.get(base_url+'/visualizacv.do?id='+id)
 
                     # QUEBRAR CAPTCHA #
-                    imgBase64 = convertCaptchatoBase64(drive)
-                    params = urllib.urlencode({'imgBase64': imgBase64})
-                    headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-                    conn = httplib.HTTPConnection("")
-                    conn.request("POST", "", params, headers)
-                    response = conn.getresponse()
-                    print response.status, response.reason
 
-                    driver.implicitly_wait(31622400)
-                    informacoes_autor = driver.find_element_by_class_name('informacoes-autor')
-                    page_source = driver.page_source.encode('utf-8')
+                    button = driver.find_element_by_id('btn_validar_captcha')
+                    while True:
+
+                        print button.is_displayed()
+                        imgBase64 = convertCaptchatoBase64(driver)
+
+                        r = requests.post('http://192.168.200.84:8080/CaptchaService/captcha', data = json.dumps({'imgBase64':imgBase64}))
+
+                        r.encoding = "UTF-8"
+                        jsonCaptcha = r.json()
+
+                        driver.find_element_by_id('informado').clear()
+                        driver.find_element_by_id('informado').send_keys(jsonCaptcha['captcha'])
+                        driver.find_element_by_id('btn_validar_captcha').click()
+                        try:
+                            page_source = driver.page_source.encode('utf-8')
+                            informacoes_autor = driver.find_element_by_class_name('informacoes-autor')
+                            break
+                        except:
+                            print "Tentar Novamente"
+                    print "Quebrou"
+
                     if paper_title.lower().replace(' ', '') in page_source.lower().replace(' ', ''):
                         paper_found = True
                         id_autor_xml = informacoes_autor.find_element_by_tag_name('li')
@@ -130,14 +146,24 @@ if __name__ == '__main__':
                         if not (id_autor_xml+'.zip') in ids_downloaded:
                             print(base_url+'/download.do?idcnpq='+id_autor_xml)
                             driver.get(base_url+'/download.do?idcnpq='+id_autor_xml)
+                            while driver.findElement(By.ID("btn_validar_captcha")):
 
-                            # QUEBRAR CAPTCHA #
-                            WebDriverWait(driver, 31622400).until(EC.invisibility_of_element_located((By.ID, 'btn_validar_captcha')))
-                        ids_downloaded.append(id_autor_xml+'.zip')
+                                imgBase64 = convertCaptchatoBase64(driver)
 
+                                r = requests.post('http://192.168.200.84:8080/CaptchaService/captcha', data = json.dumps({'imgBase64':imgBase64}))
+
+                                r.encoding = "UTF-8"
+                                jsonCaptcha = r.json()
+
+                                driver.find_element_by_id('informado').clear()
+                                driver.find_element_by_id('informado').send_keys(jsonCaptcha['captcha'])
+                                driver.find_element_by_id('btn_validar_captcha').click()
+
+                                ids_downloaded.append(id_autor_xml+'.zip')
+                                WebDriverWait(driver, 1)
                         with open(downloaded_file_name, 'a') as downloaded_file:
                             try:
-                                downloaded_file.write('"'+author_name.encode('utf-8')+'","'+paper_title+'"\n')
+                                downloaded_file.write('"'+author_name.encode('utf-8')+'","'+paper_title+'"\n'                                                               )
                             except:
                                 driver.quit()
                                 sys.exit('Erro ao escrever no arquivo '+downloaded_file_name)
