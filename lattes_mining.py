@@ -90,8 +90,10 @@ if __name__ == '__main__':
             sys.exit('Erro ao abrir o arquivo '+authors_file_name)
         
         row = next(csv_reader)
-        author_name = row[0]
-        paper_title = row[1].encode('utf-8')
+        author_uri = row[0]
+        author_name = row[1]
+        paper_title = row[2].encode('utf-8')
+        paper_title2 = row[3].encode('utf-8')
 
         driver.get(base_url)
         driver.find_element_by_id('textoBusca').clear()
@@ -138,7 +140,7 @@ if __name__ == '__main__':
                             print "Tentar Novamente"
                     print "Quebrou"
 
-                    if paper_title.lower().replace(' ', '') in page_source.lower().replace(' ', ''):
+                    if (paper_title.lower().replace(' ', '') in page_source.lower().replace(' ', '') or paper_title2.lower().replace(' ', '') in page_source.lower().replace(' ', '')):
                         paper_found = True
                         id_autor_xml = informacoes_autor.find_element_by_tag_name('li')
                         id_autor_xml = id_autor_xml.text[-16:]
@@ -163,7 +165,7 @@ if __name__ == '__main__':
                                 WebDriverWait(driver, 1)
                         with open(downloaded_file_name, 'a') as downloaded_file:
                             try:
-                                downloaded_file.write('"'+author_name.encode('utf-8')+'","'+paper_title+'"\n'                                                               )
+                                downloaded_file.write('"'+author_uri.encode('utf-8')+'","http://www.ic.ufal.br/dac/author/lattes/'+id_autor_xml+'","'+author_name.encode('utf-8')+'","'+paper_title+'","'+paper_title2+'"\n')
                             except:
                                 driver.quit()
                                 sys.exit('Erro ao escrever no arquivo '+downloaded_file_name)
