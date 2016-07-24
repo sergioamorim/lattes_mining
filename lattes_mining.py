@@ -94,6 +94,7 @@ if __name__ == '__main__':
         author_name = row[1]
         paper_title = row[2].encode('utf-8')
         paper_title2 = row[3].encode('utf-8')
+        paper_r = "Revista Brasileira de Informática na Educação"
 
         driver.get(base_url)
         driver.find_element_by_id('textoBusca').clear()
@@ -139,8 +140,8 @@ if __name__ == '__main__':
                         except:
                             print "Tentar Novamente"
                     print "Quebrou"
-
-                    if (paper_title.lower().replace(' ', '') in page_source.lower().replace(' ', '') or paper_title2.lower().replace(' ', '') in page_source.lower().replace(' ', '')):
+                    page_content = page_source.lower().replace(' ', '')
+                    if (paper_title.lower().replace(' ', '') in page_content or paper_title2.lower().replace(' ', '') in page_content or paper_r.lower().replace(' ', '') in page_content):
                         paper_found = True
                         id_autor_xml = informacoes_autor.find_element_by_tag_name('li')
                         id_autor_xml = id_autor_xml.text[-16:]
