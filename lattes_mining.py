@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # coding=utf-8
 
 from selenium import webdriver
@@ -41,8 +41,6 @@ def convertCaptchatoBase64(drive):
     // Copy the image contents to the canvas
     var ctx = canvas.getContext("2d");
     ctx.drawImage(img, 0, 0);
-
-
 
     var dataURL = canvas.toDataURL("image/png");
 
@@ -93,7 +91,7 @@ if __name__ == '__main__':
         author_uri = row[0]
         author_name = row[1]
         paper_title = row[2].encode('utf-8')
-        paper_title2 = row[3].encode('utf-8')
+        #paper_title2 = row[3].encode('utf-8')
         paper_r = "Revista Brasileira de Informática na Educação"
 
         driver.get(base_url)
@@ -141,7 +139,7 @@ if __name__ == '__main__':
                             print "Tentar Novamente"
                     print "Quebrou"
                     page_content = page_source.lower().replace(' ', '')
-                    if (paper_title.lower().replace(' ', '') in page_content or paper_title2.lower().replace(' ', '') in page_content or paper_r.lower().replace(' ', '') in page_content):
+                    if (paper_title.lower().replace(' ', '') in page_content or paper_r.lower().replace(' ', '') in page_content):
                         paper_found = True
                         id_autor_xml = informacoes_autor.find_element_by_tag_name('li')
                         id_autor_xml = id_autor_xml.text[-16:]
@@ -153,7 +151,7 @@ if __name__ == '__main__':
 
                                 imgBase64 = convertCaptchatoBase64(driver)
 
-                                r = requests.post('http://192.168.200.84:8080/CaptchaService/captcha', data = json.dumps({'imgBase64':imgBase64}))
+                                r = requests.post('http://localhost:8080/captcha-service/captcha', data = json.dumps({'imgBase64':imgBase64}))
 
                                 r.encoding = "UTF-8"
                                 jsonCaptcha = r.json()
