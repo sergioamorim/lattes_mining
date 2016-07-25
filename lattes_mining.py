@@ -83,7 +83,7 @@ if __name__ == '__main__':
     profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 'application/zip')
     #driver = webdriver.Firefox(firefox_profile=profile)
     binary = FirefoxBinary('/home/armando/Programas/firefox/firefox-bin')
-    driver = webdriver.Firefox(firefox_binary=binary)
+    driver = webdriver.Firefox(firefox_binary=binary,firefox_profile=profile)
     driver.implicitly_wait(3)
     base_url = 'http://buscatextual.cnpq.br/buscatextual'
     
