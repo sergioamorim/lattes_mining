@@ -5,6 +5,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
+from subprocess import call
 import os
 import csv
 import codecs
@@ -51,7 +53,7 @@ def convertCaptchatoBase64(drive):
 
 
 if __name__ == '__main__':
-    
+    call("mkdir data",shell=True)
     if (len(sys.argv)>1):
         prefix_file_name = sys.argv[1]
         authors_file_name = prefix_file_name+'_authors.csv'
@@ -77,7 +79,9 @@ if __name__ == '__main__':
     profile.set_preference('browser.download.dir', os.getcwd()+'/data')
     profile.set_preference('browser.download.folderList', 2)
     profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 'application/zip')
-    driver = webdriver.Firefox(firefox_profile=profile)
+    #driver = webdriver.Firefox(firefox_profile=profile)
+    binary = FirefoxBinary('/home/armando/Programas/firefox/firefox-bin')
+    driver = webdriver.Firefox(firefox_binary=binary)
     driver.implicitly_wait(3)
     base_url = 'http://buscatextual.cnpq.br/buscatextual'
     
@@ -123,7 +127,7 @@ if __name__ == '__main__':
                         print button.is_displayed()
                         imgBase64 = convertCaptchatoBase64(driver)
 
-                        r = requests.post('http://192.168.200.84:8080/CaptchaService/captcha', data = json.dumps({'imgBase64':imgBase64}))
+                        r = requests.post('http://localhost:8080/captcha-service/captcha', data = json.dumps({'imgBase64':imgBase64}))
 
                         r.encoding = "UTF-8"
                         jsonCaptcha = r.json()
@@ -138,7 +142,10 @@ if __name__ == '__main__':
                         except:
                             print "Tentar Novamente"
                     print "Quebrou"
+                    driver.implicitly_wait(10)
+                    page_source = driver.page_source.encode('utf-8')
                     page_content = page_source.lower().replace(' ', '')
+
                     if (paper_title.lower().replace(' ', '') in page_content or paper_r.lower().replace(' ', '') in page_content):
                         paper_found = True
                         id_autor_xml = informacoes_autor.find_element_by_tag_name('li')
@@ -147,8 +154,8 @@ if __name__ == '__main__':
                         if not (id_autor_xml+'.zip') in ids_downloaded:
                             print(base_url+'/download.do?idcnpq='+id_autor_xml)
                             driver.get(base_url+'/download.do?idcnpq='+id_autor_xml)
-                            while driver.findElement(By.ID("btn_validar_captcha")):
-
+                            while driver.find_element_by_id("btn_validar_captcha"):
+                                print driver.find_element_by_id("btn_validar_captcha")
                                 imgBase64 = convertCaptchatoBase64(driver)
 
                                 r = requests.post('http://localhost:8080/captcha-service/captcha', data = json.dumps({'imgBase64':imgBase64}))
