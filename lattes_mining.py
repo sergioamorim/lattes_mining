@@ -16,6 +16,8 @@ import httplib
 import requests
 import json
 
+ip = '192.168.200.137'
+
 def unicode_csv_reader(utf8_data, dialect=csv.excel, **kwargs):
         csv_reader = csv.reader(utf8_data, dialect=dialect, **kwargs)
         for row in csv_reader:
@@ -127,7 +129,7 @@ if __name__ == '__main__':
                         print button.is_displayed()
                         imgBase64 = convertCaptchatoBase64(driver)
 
-                        r = requests.post('http://localhost:8080/captcha-service/captcha', data = json.dumps({'imgBase64':imgBase64}))
+                        r = requests.post('http://'+ip+':8080/captcha-service/captcha', data = json.dumps({'imgBase64':imgBase64}))
 
                         r.encoding = "UTF-8"
                         jsonCaptcha = r.json()
@@ -158,7 +160,7 @@ if __name__ == '__main__':
                                 print driver.find_element_by_id("btn_validar_captcha")
                                 imgBase64 = convertCaptchatoBase64(driver)
 
-                                r = requests.post('http://localhost:8080/captcha-service/captcha', data = json.dumps({'imgBase64':imgBase64}))
+                                r = requests.post('http://'+ip+':8080/captcha-service/captcha', data = json.dumps({'imgBase64':imgBase64}))
 
                                 r.encoding = "UTF-8"
                                 jsonCaptcha = r.json()
