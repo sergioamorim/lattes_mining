@@ -1,10 +1,12 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # coding=utf-8
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
+from subprocess import call
 import os
 import csv
 import codecs
@@ -13,6 +15,10 @@ import urllib
 import httplib
 import requests
 import json
+
+#ip = '192.168.200.137'
+#ip = '192.168.200.84'
+ip = '192.168.200.124'
 
 def unicode_csv_reader(utf8_data, dialect=csv.excel, **kwargs):
         csv_reader = csv.reader(utf8_data, dialect=dialect, **kwargs)
@@ -42,8 +48,6 @@ def convertCaptchatoBase64(drive):
     var ctx = canvas.getContext("2d");
     ctx.drawImage(img, 0, 0);
 
-
-
     var dataURL = canvas.toDataURL("image/png");
 
     return dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
@@ -53,11 +57,11 @@ def convertCaptchatoBase64(drive):
 
 
 if __name__ == '__main__':
-    
+    call("mkdir data",shell=True)
     if (len(sys.argv)>1):
         prefix_file_name = sys.argv[1]
         authors_file_name = prefix_file_name+'_authors.csv'
-        downloaded_file_name = prefix_file_name+'_downloaded.csv'
+        downloaded_file_name = prefix_file_name+'_downloaded.nt'
         error_file_name = prefix_file_name+'_error.csv'
         not_found_file_name = prefix_file_name+'_not_found.csv'
     else:
@@ -79,7 +83,9 @@ if __name__ == '__main__':
     profile.set_preference('browser.download.dir', os.getcwd()+'/data')
     profile.set_preference('browser.download.folderList', 2)
     profile.set_preference('browser.helperApps.neverAsk.saveToDisk', 'application/zip')
-    driver = webdriver.Firefox(firefox_profile=profile)
+    #driver = webdriver.Firefox(firefox_profile=profile)
+    binary = FirefoxBinary('/home/armando/Programas/firefox/firefox-bin')
+    driver = webdriver.Firefox(firefox_binary=binary,firefox_profile=profile)
     driver.implicitly_wait(3)
     base_url = 'http://buscatextual.cnpq.br/buscatextual'
     
@@ -93,7 +99,8 @@ if __name__ == '__main__':
         author_uri = row[0]
         author_name = row[1]
         paper_title = row[2].encode('utf-8')
-        paper_title2 = row[3].encode('utf-8')
+        #paper_title2 = row[3].encode('utf-8')
+        paper_r = "Revista Brasileira de Informática na Educação"
 
         driver.get(base_url)
         driver.find_element_by_id('textoBusca').clear()
@@ -124,7 +131,7 @@ if __name__ == '__main__':
                         print button.is_displayed()
                         imgBase64 = convertCaptchatoBase64(driver)
 
-                        r = requests.post('http://192.168.200.84:8080/CaptchaService/captcha', data = json.dumps({'imgBase64':imgBase64}))
+                        r = requests.post('http://'+ip+':8080/captcha-service/captcha', data = json.dumps({'imgBase64':imgBase64}))
 
                         r.encoding = "UTF-8"
                         jsonCaptcha = r.json()
@@ -139,8 +146,11 @@ if __name__ == '__main__':
                         except:
                             print "Tentar Novamente"
                     print "Quebrou"
+                    driver.implicitly_wait(10) 
+                    page_source = driver.page_source.encode('utf-8')
+                    page_content = page_source.lower().replace(' ', '')
 
-                    if (paper_title.lower().replace(' ', '') in page_source.lower().replace(' ', '') or paper_title2.lower().replace(' ', '') in page_source.lower().replace(' ', '')):
+                    if (paper_title.lower().replace(' ', '') in page_content or paper_r.lower().replace(' ', '') in page_content):
                         paper_found = True
                         id_autor_xml = informacoes_autor.find_element_by_tag_name('li')
                         id_autor_xml = id_autor_xml.text[-16:]
@@ -148,28 +158,45 @@ if __name__ == '__main__':
                         if not (id_autor_xml+'.zip') in ids_downloaded:
                             print(base_url+'/download.do?idcnpq='+id_autor_xml)
                             driver.get(base_url+'/download.do?idcnpq='+id_autor_xml)
-                            while driver.findElement(By.ID("btn_validar_captcha")):
-
+                            while driver.find_element_by_id("btn_validar_captcha"):
+                                print driver.find_element_by_id("btn_validar_captcha")
                                 imgBase64 = convertCaptchatoBase64(driver)
-
-                                r = requests.post('http://192.168.200.84:8080/CaptchaService/captcha', data = json.dumps({'imgBase64':imgBase64}))
+                                driver.implicitly_wait(5)
+                                r = requests.post('http://'+ip+':8080/captcha-service/captcha', data = json.dumps({'imgBase64':imgBase64}))
 
                                 r.encoding = "UTF-8"
                                 jsonCaptcha = r.json()
+                                try:
+                                    driver.find_element_by_id('informado').clear()
+                                    driver.find_element_by_id('informado').send_keys(jsonCaptcha['captcha'])
+                                    driver.find_element_by_id('btn_validar_captcha').click()    
+                                except Exception, e:
+                                    if(len(ids_downloaded) < os.listdir(os.getcwd()+'/data')):
+                                        fname = id_autor_xml+'.zip'
+                                        ids_downloaded.append(fname)
+                                        print os.getcwd()+'/data/'+fname+' Downloaded!'
+                                        break;
+                                finally:
+                                    driver.implicitly_wait(5)
 
-                                driver.find_element_by_id('informado').clear()
-                                driver.find_element_by_id('informado').send_keys(jsonCaptcha['captcha'])
-                                driver.find_element_by_id('btn_validar_captcha').click()
-
-                                ids_downloaded.append(id_autor_xml+'.zip')
-                                WebDriverWait(driver, 1)
-                        with open(downloaded_file_name, 'a') as downloaded_file:
+                        with open(downloaded_file_name,'a') as downloaded_file:
                             try:
-                                downloaded_file.write('"'+author_uri.encode('utf-8')+'","http://www.ic.ufal.br/dac/author/lattes/'+id_autor_xml+'","'+author_name.encode('utf-8')+'","'+paper_title+'","'+paper_title2+'"\n')
+                                lattes_uri = "http://www.ic.ufal.br/dac/author/lattes/"+id_autor_xml
+                                downloaded_file.write('<'+author_uri.encode('utf-8')+'> <http://www.w3.org/2002/07/owl#sameAs> <'+lattes_uri.encode('utf-8')+'>.\n')
+                                call('notify-send -i firefox "'+str(len(ids_downloaded))+' perfís baixados!"',shell=True)
                             except:
                                 driver.quit()
                                 sys.exit('Erro ao escrever no arquivo '+downloaded_file_name)
-                        break
+                            finally:
+                                downloaded_file.close()
+                        #print "----------"
+                        #author_uri = author_uri.encode('utf-8')
+                        #lattes_uri = "http://www.ic.ufal.br/dac/author/lattes/"+id_autor_xml
+                        #author_name = author_name.encode('utf-8')
+                        #paper_title = paper_title
+                        #call('echo "'+author_uri+'","'+lattes_uri.encode('utf-8')+'" >> '+downloaded_file_name.encode('utf-8'),shell=True)
+                        #print "----------"
+                            
 
             if not paper_found:
                 with open(error_file_name, 'a') as error_file:
@@ -183,14 +210,17 @@ if __name__ == '__main__':
             with open(not_found_file_name, 'a') as not_found_file:
                 try:
                     not_found_file.write('"'+author_name.encode('utf-8')+'","'+paper_title+'"\n')
-                except:
+                except e:
                     driver.quit()
+                    print e
                     sys.exit('Erro ao escrever no arquivo '+not_found_file_name)
+
 
         try:
             remove_first_line_from_file(authors_file_name)
         except:
             driver.quit()
+            traceback.print_exc(file=sys.stdout)
             sys.exit('Erro ao tentar remover a primeira linha do arquivo '+authors_file_name)
 
     driver.quit()
